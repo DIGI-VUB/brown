@@ -1,0 +1,30 @@
+CXX_STD = CXX11
+PKG_LIBS = -pthread 
+PKG_CPPFLAGS = -pthread -DSTRICT_R_HEADERS -I. -I./brown/basic
+
+SOURCES = brown/basic/opt.cc \
+					brown/basic/city.cc \
+					brown/basic/indent.cc \
+					brown/basic/lisp.cc \
+					brown/basic/logging.cc \
+					brown/basic/mem-tracker.cc \
+					brown/basic/multi-ostream.cc \
+					brown/basic/prob-utils.cc \
+					brown/basic/stats.cc \
+					brown/basic/std.cc \
+					brown/basic/stl-basic.cc \
+					brown/basic/stl-utils.cc \
+					brown/basic/str-str-db.cc \
+					brown/basic/str.cc \
+					brown/basic/strdb.cc \
+					brown/basic/timer.cc \
+					brown/basic/union-set.cc   \
+					rcpp_brown.cpp   \
+					RcppExports.cpp
+
+OBJ       = $(SOURCES:.cc=.o)
+OBJECTS   = $(OBJ:.cpp=.o)
+
+.PHONY: all
+
+all: $(SHLIB); rm -f $(OBJECTS)
