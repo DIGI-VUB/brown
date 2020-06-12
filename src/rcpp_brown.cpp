@@ -1391,6 +1391,8 @@ Rcpp::List cluster_brown(std::string text_file,
   }
   
   Rcpp::List out = Rcpp::List::create(
+    Rcpp::Named("initC") = initC,
+    Rcpp::Named("min_occur") = min_occur,
     Rcpp::Named("clusters") = clusterassignment,
     Rcpp::Named("collocations") = collocations
   );
