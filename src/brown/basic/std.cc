@@ -14,12 +14,13 @@ string now() {
   time_t t = time(NULL);
   return substr(ctime(&t), 0, -1);
 }
-
+/*
 string hostname() {
   char buf[1024];
   gethostname(buf, sizeof(buf));
   return buf;
 }
+ */
 
 // Return the amount of memory (kB) used by this process
 int mem_usage() {
@@ -63,6 +64,7 @@ time_t file_modified_time(const char *file) {
   return stat_buf.st_mtime;
 }
 
+/*
 // Return the cpu speed in MHz.
 int cpu_speed_mhz() {
   ifstream in("/proc/cpuinfo");
@@ -80,6 +82,7 @@ int cpu_speed_mhz() {
   }
   return 0;
 }
+ */
 
 // "file" -> "file"
 // "dir/file" -> "file"

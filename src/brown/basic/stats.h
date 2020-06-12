@@ -3,10 +3,10 @@
 
 #include "std.h"
 #include "stl-basic.h"
-#ifndef _WIN32
+//#ifndef _WIN32
 #define DBL_MAX 1e300
 #define DBL_MIN (-1e300)
-#endif
+//#endif
 
 struct StatFig {
   StatFig() { clear(); }

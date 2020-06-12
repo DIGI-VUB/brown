@@ -106,8 +106,8 @@ template<class T> inline void _assert_eq(const T &u, const T &v, const char *us,
   } while(0)
 
 string now();
-string hostname();
-int cpu_speed_mhz();
+//string hostname();
+//int cpu_speed_mhz();
 int mem_usage(); // in kB
 
 bool create_file(const char *file);

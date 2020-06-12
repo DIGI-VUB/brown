@@ -109,10 +109,14 @@ struct LogTracker {
 #define track_forvec(i, tx, x, vec, s, all) \
   forvec(i, tx, x, vec) track_block(s, i << '/' << len(vec), all)
 
+/*
 #define init_log \
   log_info.init(); \
   track("main", to_vector(argv, argc), true); \
-  logs(now() << " on " << hostname() << " (" << cpu_speed_mhz() << "MHz)");
+  logs(now() << " on " << hostname() << " (" << cpu_speed_mhz() << "MHz)");\
+*/
+#define init_log log_info.init();                            \
+
 
 #define prog_status \
   "PROG_STATUS: " << \
