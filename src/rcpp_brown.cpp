@@ -1183,8 +1183,113 @@ void output_cluster_paths(string paths_file, string map_file) {
   }
 }
 
+
+std::string PhraseText(const Phrase &phrase) {
+  std::string out;
+  // Decode the phrase ID into the length and the offset in phrases.
+  int a = phrase.a;
+  int l; for(l = 1; a >= num_phrases(l); a -= num_phrases(l), l++);
+  
+  foridx(i, l) {
+    if(i > 0) out += ' ';
+    out += db[phrases[l][a*l+i]];
+  }
+  return out;
+}
+
+
+Rcpp::DataFrame brown_collocations(int ncollocs) {
+  vector< pair<double, IntPair> > collocs;
+  FOR_SLOT(s) FOR_SLOT(t) {
+    collocs.push_back(pair<double, IntPair>(q2[s][t], make_pair(slot2cluster[s], slot2cluster[t])));
+  }
+  ncollocs = len(collocs);
+  //ncollocs = min(ncollocs, len(collocs));
+  partial_sort(collocs.begin(), collocs.begin()+ncollocs, collocs.end(), greater< pair<double, IntPair> >());
+  
+  std::vector<std::string> term1;
+  std::vector<std::string> term2;
+  std::vector<double> collocation;
+  for(int i = 0; i < ncollocs; i++) {
+    const IntPair &ab = collocs[i].second;
+    term1.push_back(PhraseText(Phrase(ab.first)));
+    term2.push_back(PhraseText(Phrase(ab.second)));
+    collocation.push_back(collocs[i].first);
+  }
+  Rcpp::DataFrame out = Rcpp::DataFrame::create(
+    Rcpp::Named("term1") = term1,
+    Rcpp::Named("term2") = term2,
+    Rcpp::Named("collocation") = collocation,
+    Rcpp::Named("stringsAsFactors") = false
+  );
+  return out;
+}
+
+
+Rcpp::DataFrame brown_clusterassignment() {
+  std::vector<std::string> word;
+  std::vector<std::string> word_path;
+  std::vector<int> freq;
+  std::vector<double> kl_left;
+  std::vector<double> kl_right;
+  // The cluster tree is composed of the top part, which consists
+  // of Stage 2 merges, and the bottom part, which consists of stage 1 merges.
+  // Print out paths from the root only through the stage 2 merges.
+  char path[16384];
+  vector<StackItem> stack;
+  
+  stack.push_back(StackItem(cluster2slot.begin()->first, 0, '\0'));
+  
+  while(!stack.empty()) {
+    // Take off a stack item (a node in the tree).
+    StackItem item = stack.back();
+    int a = item.a;
+    int path_i = item.path_i;
+    if(item.ch)
+      path[path_i-1] = item.ch;
+    stack.pop_back();
+    
+    // Look at the node's children (if any).
+    IntIntPairMap::const_iterator it = cluster_tree.find(a);
+    if(it == cluster_tree.end()) {
+      path[path_i] = '\0';
+      std::string p(path);
+      word.push_back(PhraseText(Phrase(a)));
+      word_path.push_back(p);
+      freq.push_back(phrase_freqs[a]);
+      kl_left.push_back(kl_map[0][a]);
+      kl_right.push_back(kl_map[1][a]);
+      // if(out_paths) paths_out << path << '\t' << Phrase(a) << '\t' << phrase_freqs[a] << endl;
+      // if(out_map) map_out << Phrase(a) << '\t'
+      //                     << path << "-L " << kl_map[0][a] << '\t'
+      //                     << path << "-R " << kl_map[1][a] << '\t'
+      //                     << path << "-freq " << phrase_freqs[a] << endl;
+    }
+    else {
+      const IntPair &children = it->second;
+      // Only print out paths through the part of the tree constructed in stage 2.
+      bool extend = a >= stage2_cluster_offset;
+      int new_path_i = path_i + extend;
+      stack.push_back(StackItem(children.second, new_path_i, extend ? '1' : '\0'));
+      stack.push_back(StackItem(children.first, new_path_i, extend ? '0' : '\0'));
+    }
+  }
+  Rcpp::DataFrame out = Rcpp::DataFrame::create(
+    Rcpp::Named("word") = word,
+    Rcpp::Named("path") = word_path,
+    Rcpp::Named("freq") = freq,
+    Rcpp::Named("kl_left") = kl_left,
+    Rcpp::Named("kl_right") = kl_right,
+    Rcpp::Named("stringsAsFactors") = false
+  );
+  return out;
+}
+
+
+
+
 // [[Rcpp::export]]
-int cluster_brown(std::string text_file, 
+Rcpp::List cluster_brown(std::string text_file, 
                   std::string output_dir, 
                   int min_occur = 5, int initC = 100,
                   int ncollocs = 500,
@@ -1259,6 +1364,8 @@ int cluster_brown(std::string text_file,
   
   read_restrict_text(restrict_file);
   read_text(text_file, restrict_file, paths2map, plen, min_occur, featvec_file, initC);
+  Rcpp::DataFrame collocations;
+  Rcpp::DataFrame clusterassignment;
   if(featvec_file.empty()) {
     if(paths2map)
       convert_paths_to_map();
@@ -1275,11 +1382,19 @@ int cluster_brown(std::string text_file,
         initC = N;
       }
       create_initial_clusters(initC);
-      output_best_collocations(collocs_file, ncollocs);
+      collocations = brown_collocations(ncollocs);
+      //output_best_collocations(collocs_file, ncollocs);
       do_clustering(chk, num_threads, initC);
-      output_cluster_paths(paths_file, map_file);
+      //output_cluster_paths(paths_file, map_file);
+      clusterassignment = brown_clusterassignment();
     }
   }
   
-  return 0;
+  Rcpp::List out = Rcpp::List::create(
+    Rcpp::Named("clusters") = clusterassignment,
+    Rcpp::Named("collocations") = collocations
+  );
+  return out;
 }
+
+

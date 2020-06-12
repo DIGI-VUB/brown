@@ -6,7 +6,7 @@
 using namespace Rcpp;
 
 // cluster_brown
-int cluster_brown(std::string text_file, std::string output_dir, int min_occur, int initC, int ncollocs, int plen, int num_threads, bool chk, bool print_stats, bool paths2map);
+Rcpp::List cluster_brown(std::string text_file, std::string output_dir, int min_occur, int initC, int ncollocs, int plen, int num_threads, bool chk, bool print_stats, bool paths2map);
 RcppExport SEXP _brown_cluster_brown(SEXP text_fileSEXP, SEXP output_dirSEXP, SEXP min_occurSEXP, SEXP initCSEXP, SEXP ncollocsSEXP, SEXP plenSEXP, SEXP num_threadsSEXP, SEXP chkSEXP, SEXP print_statsSEXP, SEXP paths2mapSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
