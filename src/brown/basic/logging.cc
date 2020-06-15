@@ -1,7 +1,7 @@
 #include <Rcpp.h>
 
 #include "logging.h"
-#include "opt.h"
+//#include "opt.h"
 #include "mem.h"
 
 // The logging output has a tree structure, where each node is a
@@ -140,8 +140,9 @@ LogTracker::~LogTracker() {
     }
   }
 }
-
+/*
 // Options for logging.
 int _log_info_max_ind_level = opt_define_int_wrap("max-ind-level", &log_info.max_ind_level, log_info.max_ind_level, "Maximum indent level for logging", false);
 int _log_info_ms_per_line = opt_define_int_wrap("ms-per-line", &log_info.ms_per_line, log_info.ms_per_line, "Print a line out every this many milliseconds", false);
 string _log_info_log_file = opt_define_string_wrap("log", &log_info.log_file, log_info.log_file, "File to write log to (\"\" for stdout)", false);
+*/

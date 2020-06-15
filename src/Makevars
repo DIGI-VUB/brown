@@ -2,8 +2,7 @@ CXX_STD = CXX11
 PKG_LIBS = -pthread 
 PKG_CPPFLAGS = -pthread -DSTRICT_R_HEADERS -I. -I./brown/basic
 
-SOURCES = brown/basic/opt.cc \
-					brown/basic/city.cc \
+SOURCES = brown/basic/city.cc \
 					brown/basic/indent.cc \
 					brown/basic/lisp.cc \
 					brown/basic/logging.cc \

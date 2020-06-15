@@ -34,7 +34,7 @@
 #include "brown/basic/strdb.h"
 #include "brown/basic/union-set.h"
 #include "brown/basic/mem-tracker.h"
-#include "brown/basic/opt.h"
+//#include "brown/basic/opt.h"
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -75,12 +75,12 @@ public:
   }
 };
 
-
+/*
 vector< OptInfo<bool> > bool_opts;
 vector< OptInfo<int> > int_opts;
 vector< OptInfo<double> > double_opts;
 vector< OptInfo<string> > string_opts;
-/*
+
 opt_define_string(output_dir,    "output_dir", "",         "Output everything to this directory.");
 opt_define_string(text_file,     "text", "",               "Text file with corpora (input).");
 opt_define_string(restrict_file, "restrict", "",           "Only consider words that appear in this text (input).");
@@ -1347,7 +1347,7 @@ Rcpp::List cluster_brown(std::string text_file,
     if(log_info.log_file.empty()) log_info.log_file = output_dir+"/log";
   }
   
-  init_log;
+  //init_log;
   
   track_mem(db);
   track_mem(phrase_freqs);
