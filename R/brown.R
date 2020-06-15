@@ -46,7 +46,7 @@
 #' txt <- strsplit(txt, " ")
 #' txt <- unlist(txt)
 #' wordgroups <- brown(txt, vocabulary = c("cat", "dog", "mouse", "chased"), 
-#'                     initC = 4, min_occur = 1)
+#'                     initC = 4, min_occur = 1, trace = TRUE)
 brown <- function(x, initC = 100, min_occur = 1, vocabulary = character(), num_threads = 1L, trace = FALSE, ...){
   initC <- as.integer(initC)
   min_occur <- as.integer(min_occur)

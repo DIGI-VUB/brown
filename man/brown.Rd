@@ -67,7 +67,7 @@ txt <- c("the cat chased the mouse",
 txt <- strsplit(txt, " ")
 txt <- unlist(txt)
 wordgroups <- brown(txt, vocabulary = c("cat", "dog", "mouse", "chased"), 
-                    initC = 4, min_occur = 1)
+                    initC = 4, min_occur = 1, trace = TRUE)
 }
 \references{
 \url{https://github.com/percyliang/brown-cluster}, Brown, et al.: Class-Based n-gram Models of Natural Language
