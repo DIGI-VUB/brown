@@ -980,62 +980,6 @@ struct StackItem {
   char ch;
 };
 
-// The cluster tree is composed of the top part, which consists
-// of Stage 2 merges, and the bottom part, which consists of stage 1 merges.
-// Print out paths from the root only through the stage 2 merges.
-void output_cluster_paths(string paths_file, string map_file) {
-  char path[16384];
-  vector<StackItem> stack;
-  
-  // Figure out what to output
-#define out_paths (!paths_file.empty())
-#define out_map (!map_file.empty())
-  if(!out_paths && !out_map) return;
-  ofstream paths_out, map_out;
-  if(out_paths) {
-    paths_out.open(paths_file.c_str());
-    logs("Writing cluster paths to " << paths_file);
-  }
-  if(out_map) {
-    map_out.open(map_file.c_str());
-    logs("Writing cluster map to " << map_file);
-  }
-  
-  stack.push_back(StackItem(cluster2slot.begin()->first, 0, '\0'));
-  
-  while(!stack.empty()) {
-    // Take off a stack item (a node in the tree).
-    StackItem item = stack.back();
-    int a = item.a;
-    int path_i = item.path_i;
-    if(item.ch)
-      path[path_i-1] = item.ch;
-    stack.pop_back();
-    
-    // Look at the node's children (if any).
-    IntIntPairMap::const_iterator it = cluster_tree.find(a);
-    if(it == cluster_tree.end()) {
-      path[path_i] = '\0';
-      if(out_paths) paths_out << path << '\t' << PhraseText(Phrase(a)) << '\t' << phrase_freqs[a] << endl;
-      if(out_map) map_out << PhraseText(Phrase(a)) << '\t'
-                          << path << "-L " << kl_map[0][a] << '\t'
-                          << path << "-R " << kl_map[1][a] << '\t'
-                          << path << "-freq " << phrase_freqs[a] << endl;
-    }
-    else {
-      const IntPair &children = it->second;
-      // Only print out paths through the part of the tree constructed in stage 2.
-      bool extend = a >= stage2_cluster_offset;
-      int new_path_i = path_i + extend;
-      
-      stack.push_back(StackItem(children.second, new_path_i, extend ? '1' : '\0'));
-      stack.push_back(StackItem(children.first, new_path_i, extend ? '0' : '\0'));
-    }
-  }
-}
-
-
-
 
 
 Rcpp::DataFrame brown_collocations(int ncollocs) {
