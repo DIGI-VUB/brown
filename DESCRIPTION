@@ -6,11 +6,11 @@ Maintainer: Jan Wijffels <jan.wijffels@vub.be>
 Authors@R: c(
     person('Jan', 'Wijffels', role = c('aut', 'cre', 'cph'), email = 'jan.wijffels@vub.be', comment = "R wrapper"), 
     person('Vrije Universiteit Brussel - DIGI: Brussels Platform for Digital Humanities', role = 'cph', comment = "R wrapper"),
-    person('Percy Liang', role = c('ctb', 'cph'), comment = "brown-cluster C++ library in src/brown except src/brown/city.cc and src/brown/city.h"),
-    person('Chris Quirk', role = c('ctb', 'cph'), comment = "windows adaptations to src/brown"),
-    person('Google, Inc.', role = 'cph', comment = "file src/brown/city.cc and src/brown/city.h"), 
-    person('Geoff Pike', role = c('ctb', 'cph'), comment = "files src/brown/city.cc and src/brown/city.h"),
-    person('Jyrki Alakuijala', role = c('ctb', 'cph'), comment = "files src/brown/city.cc and src/brown/city.h"))
+    person('Percy Liang', role = c('ctb', 'cph'), comment = "brown-cluster C++ library in src/brown except src/brown/city.cc and src/brown/city.h - MIT License"),
+    person('Chris Quirk', role = c('ctb', 'cph'), comment = "windows adaptations to src/brown - MIT License"),
+    person('Google, Inc.', role = 'cph', comment = "file src/brown/city.cc and src/brown/city.h - MIT License"), 
+    person('Geoff Pike', role = c('ctb', 'cph'), comment = "files src/brown/city.cc and src/brown/city.h - MIT License"),
+    person('Jyrki Alakuijala', role = c('ctb', 'cph'), comment = "files src/brown/city.cc and src/brown/city.h - MIT License"))
 Description: Group words into different classes by using the 'Brown' word clustering algorithm. 
     Wraps the C++ library available at <https://github.com/chrisquirk/brown-cluster>.
     The techniques are explained in detail in the paper 'Class-Based n-gram Models of Natural Language' by Brown et al. (1992) <https://www.aclweb.org/anthology/J92-4003.pdf>.
@@ -20,4 +20,5 @@ Encoding: UTF-8
 LazyData: true
 Imports: Rcpp
 LinkingTo: Rcpp
+Suggests: udpipe
 RoxygenNote: 7.1.0
