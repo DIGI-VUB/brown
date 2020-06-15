@@ -7,8 +7,10 @@
 #' @param x either the path to a file or a character vector of words where words are separated by spaces
 #' @param initC the number of clusters
 #' @param min_occur how many times a word should appear to be considered. Defaults to 1.
+#' @param vocabulary optionally, a character vector of words to use as the vocabulary
 #' @param num_threads number of threads to use for parallel computation. Defaults to 1.
 #' @param trace logical indicating to print the evolution of the algorithm. Defaults to FALSE.
+#' @param ... passed on to \code{readLines} in case \code{x} is a file
 #' @return an object of class 'brown' which is a list with elements
 #' \itemize{
 #' \item{initC: the \code{initC} argument provided or if the number of phrases found in \code{x} is smaller than the amount provided, the lowest of these 2 values}
@@ -19,11 +21,13 @@
 #' @references \url{https://github.com/percyliang/brown-cluster}, Brown, et al.: Class-Based n-gram Models of Natural Language
 #' @export
 #' @examples 
-#' ## Take some data and standardise it a bit
+#' ## Take some data and standardise it a bit, put it in a vector of words
 #' library(udpipe)
 #' data(brussels_reviews, package = "udpipe")
 #' x <- subset(brussels_reviews, language == "nl")
-#' x <- tolower(x$feedback)
+#' x <- strsplit(x$feedback, "[[:space:][:punct:]]+")
+#' x <- unlist(x)
+#' x <- tolower(x)
 #' 
 #' ## Perform Brown clustering
 #' wordgroups <- brown(x, initC = 50, min_occur = 3)
@@ -35,37 +39,35 @@
 #' fat
 #' 
 #' 
-#' ## See the evolution of the algorithm
+#' ## See the evolution of the algorithm by setting trace = TRUE
 #' txt <- c("the cat chased the mouse", 
 #'          "the dog chased the cat",
 #'          "the mouse chased the dog")
-#' wordgroups <- brown(txt, initC = 50, min_occur = 1, trace = TRUE)
-brown <- function(x, initC = 100, min_occur = 1, num_threads = 1L, trace = FALSE){
+#' txt <- strsplit(txt, " ")
+#' txt <- unlist(txt)
+#' wordgroups <- brown(txt, vocabulary = c("cat", "dog", "mouse", "chased"), 
+#'                     initC = 4, min_occur = 1)
+brown <- function(x, initC = 100, min_occur = 1, vocabulary = character(), num_threads = 1L, trace = FALSE, ...){
   initC <- as.integer(initC)
   min_occur <- as.integer(min_occur)
   num_threads <- as.integer(num_threads)
   plen <- 1L
   x <- as.character(x)
-  ## This is really important - don't remove this logic of each time using a different file as otherwise the C++ backend of percy-liang is not suited to handle using the same file appropriately
-  newfile <- tempfile(pattern = "brown_", fileext = ".txt")
-  on.exit({
-    if(file.exists(newfile)) file.remove(newfile)
-  })
   if(length(x) == 1 && file.exists(x)){
-    file.copy(from = x, to = newfile)
-  }else{
-    writeLines(x, con = newfile)
+    x <- readLines(x, ...)
+    x <- strsplit(x, "[[:space:][:punct:]]+")
+    x <- unlist(x)
   }
   if(trace){
-    out <- cluster_brown(text_file = newfile, 
-                         output_dir = tempdir(), 
+    out <- cluster_brown(x = x, 
+                         vocabulary = vocabulary, 
                          min_occur = min_occur, initC = initC, plen = plen,
                          num_threads = num_threads)
   }else{
-    log <- utils::capture.output(out <- cluster_brown(text_file = newfile, 
-                         output_dir = tempdir(), 
-                         min_occur = min_occur, initC = initC, plen = plen,
-                         num_threads = num_threads))
+    log <- utils::capture.output(out <- cluster_brown(x = x, 
+                                                      vocabulary = vocabulary, 
+                                                      min_occur = min_occur, initC = initC, plen = plen,
+                                                      num_threads = num_threads))
   }
   out$clusters <- out$clusters[order(out$clusters$path, -out$clusters$freq, decreasing = FALSE), ]
   out

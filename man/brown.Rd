@@ -4,7 +4,15 @@
 \alias{brown}
 \title{Brown Clustering of Words}
 \usage{
-brown(x, initC = 100, min_occur = 1, num_threads = 1L, trace = FALSE)
+brown(
+  x,
+  initC = 100,
+  min_occur = 1,
+  vocabulary = character(),
+  num_threads = 1L,
+  trace = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{either the path to a file or a character vector of words where words are separated by spaces}
@@ -12,6 +20,8 @@ brown(x, initC = 100, min_occur = 1, num_threads = 1L, trace = FALSE)
 \item{initC}{the number of clusters}
 
 \item{min_occur}{how many times a word should appear to be considered. Defaults to 1.}
+
+\item{vocabulary}{optionally, a character vector of words to use as the vocabulary}
 
 \item{num_threads}{number of threads to use for parallel computation. Defaults to 1.}
 
@@ -32,11 +42,13 @@ are based on the cluster that the previous word belongs to: \eqn{P(w_i|w_{i-1}) 
 Wrapper for the \url{https://github.com/percyliang/brown-cluster} C++ implementation.
 }
 \examples{
-## Take some data and standardise it a bit
+## Take some data and standardise it a bit, put it in a vector of words
 library(udpipe)
 data(brussels_reviews, package = "udpipe")
 x <- subset(brussels_reviews, language == "nl")
-x <- tolower(x$feedback)
+x <- strsplit(x$feedback, "[[:space:][:punct:]]+")
+x <- unlist(x)
+x <- tolower(x)
 
 ## Perform Brown clustering
 wordgroups <- brown(x, initC = 50, min_occur = 3)
@@ -48,11 +60,14 @@ fat <- lapply(fat, paste, collapse = " ")
 fat
 
 
-## See the evolution of the algorithm
+## See the evolution of the algorithm by setting trace = TRUE
 txt <- c("the cat chased the mouse", 
          "the dog chased the cat",
          "the mouse chased the dog")
-wordgroups <- brown(txt, initC = 50, min_occur = 1, trace = TRUE)
+txt <- strsplit(txt, " ")
+txt <- unlist(txt)
+wordgroups <- brown(txt, vocabulary = c("cat", "dog", "mouse", "chased"), 
+                    initC = 4, min_occur = 1)
 }
 \references{
 \url{https://github.com/percyliang/brown-cluster}, Brown, et al.: Class-Based n-gram Models of Natural Language

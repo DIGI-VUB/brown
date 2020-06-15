@@ -6,13 +6,13 @@
 using namespace Rcpp;
 
 // cluster_brown
-Rcpp::List cluster_brown(std::string text_file, std::string output_dir, int min_occur, int initC, int ncollocs, int plen, int num_threads, bool chk, bool print_stats, bool paths2map);
-RcppExport SEXP _brown_cluster_brown(SEXP text_fileSEXP, SEXP output_dirSEXP, SEXP min_occurSEXP, SEXP initCSEXP, SEXP ncollocsSEXP, SEXP plenSEXP, SEXP num_threadsSEXP, SEXP chkSEXP, SEXP print_statsSEXP, SEXP paths2mapSEXP) {
+Rcpp::List cluster_brown(std::vector<std::string> x, std::vector<std::string> vocabulary, int min_occur, int initC, int ncollocs, int plen, int num_threads, bool chk, bool print_stats, bool paths2map);
+RcppExport SEXP _brown_cluster_brown(SEXP xSEXP, SEXP vocabularySEXP, SEXP min_occurSEXP, SEXP initCSEXP, SEXP ncollocsSEXP, SEXP plenSEXP, SEXP num_threadsSEXP, SEXP chkSEXP, SEXP print_statsSEXP, SEXP paths2mapSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::string >::type text_file(text_fileSEXP);
-    Rcpp::traits::input_parameter< std::string >::type output_dir(output_dirSEXP);
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type x(xSEXP);
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type vocabulary(vocabularySEXP);
     Rcpp::traits::input_parameter< int >::type min_occur(min_occurSEXP);
     Rcpp::traits::input_parameter< int >::type initC(initCSEXP);
     Rcpp::traits::input_parameter< int >::type ncollocs(ncollocsSEXP);
@@ -21,7 +21,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type chk(chkSEXP);
     Rcpp::traits::input_parameter< bool >::type print_stats(print_statsSEXP);
     Rcpp::traits::input_parameter< bool >::type paths2map(paths2mapSEXP);
-    rcpp_result_gen = Rcpp::wrap(cluster_brown(text_file, output_dir, min_occur, initC, ncollocs, plen, num_threads, chk, print_stats, paths2map));
+    rcpp_result_gen = Rcpp::wrap(cluster_brown(x, vocabulary, min_occur, initC, ncollocs, plen, num_threads, chk, print_stats, paths2map));
     return rcpp_result_gen;
 END_RCPP
 }

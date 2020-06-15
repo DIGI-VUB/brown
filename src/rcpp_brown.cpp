@@ -75,34 +75,6 @@ public:
   }
 };
 
-/*
-vector< OptInfo<bool> > bool_opts;
-vector< OptInfo<int> > int_opts;
-vector< OptInfo<double> > double_opts;
-vector< OptInfo<string> > string_opts;
-
-opt_define_string(output_dir,    "output_dir", "",         "Output everything to this directory.");
-opt_define_string(text_file,     "text", "",               "Text file with corpora (input).");
-opt_define_string(restrict_file, "restrict", "",           "Only consider words that appear in this text (input).");
-opt_define_string(paths_file,    "paths", "",              "File containing root-to-node paths in the clustering tree (input/output).");
-opt_define_string(map_file,      "map", "",                "File containing lots of good information about each phrase, more general than paths (output)");
-opt_define_string(collocs_file,  "collocs", "",            "Collocations with most mutual information (output).");
-opt_define_string(featvec_file,  "featvec", "",            "Feature vectors (output).");
-opt_define_string(comment,       "comment", "",            "Description of this run.");
-
-opt_define_int(ncollocs,     "ncollocs", 500,              "Collocations with most mutual information (output).");
-opt_define_int(initC,        "c", 1000,                    "Number of clusters.");
-opt_define_int(plen,         "plen", 1,                    "Maximum length of a phrase to consider.");
-opt_define_int(min_occur,    "min-occur", 1,               "Keep phrases that occur at least this many times.");
-opt_define_int(rand_seed,    "rand", time(NULL)*getpid(),  "Number to call srand with.");
-opt_define_int(num_threads, "threads", 1,                  "Number of threads to use in the worker pool.");
-
-opt_define_bool(chk,         "chk", false,                 "Check data structures are valid (expensive).");
-opt_define_bool(print_stats, "stats", false,               "Just print out stats.");
-opt_define_bool(paths2map,   "paths2map", false,           "Take the paths file and generate a map file.");
-*/
-
-//#define use_restrict (!restrict_file.empty())
 const char *delim_str = "$#$";
 
 typedef IntPair _;
@@ -348,23 +320,11 @@ bool is_good_phrase(const IntVec &phrase) {
   return true;
 }
 
-void read_restrict_text(std::string restrict_file) {
-  // Read the words from the text file that restricts what words we will cluster
-  if(restrict_file.empty()) return;
-  track("read_restrict_text()", restrict_file, false);
-  read_text(restrict_file.c_str(), NULL, db, false, false, true);
-}
 
 IntVecIntMap vec2phrase;
 IntVec text;
-void read_text_process_word(int w) {
-  text.push_back(w);
-}
-void read_text(string text_file, string restrict_file, bool paths2map, int plen, int min_occur, string featvec_file, int initC) {
-  track("read_text()", "", false);
-  bool use_restrict = !restrict_file.empty();
-  
-  read_text(text_file.c_str(), read_text_process_word, db, !use_restrict, !use_restrict, !use_restrict);
+
+void read_text(bool paths2map, int plen, int min_occur, string featvec_file, int initC) {
   T = len(text);
   delim_word = db.lookup(delim_str, false, -1);
   //if(!paths2map) db.destroy_s2i(); // Conserve memory.
@@ -1241,7 +1201,6 @@ Rcpp::DataFrame brown_clusterassignment() {
   // Print out paths from the root only through the stage 2 merges.
   char path[16384];
   vector<StackItem> stack;
-  
   stack.push_back(StackItem(cluster2slot.begin()->first, 0, '\0'));
   
   while(!stack.empty()) {
@@ -1293,8 +1252,8 @@ Rcpp::DataFrame brown_clusterassignment() {
 
 
 // [[Rcpp::export]]
-Rcpp::List cluster_brown(std::string text_file, 
-                  std::string output_dir, 
+Rcpp::List cluster_brown(std::vector<std::string> x, 
+                         std::vector<std::string> vocabulary, 
                   int min_occur = 5, int initC = 100,
                   int ncollocs = 500,
                   int plen = 1,
@@ -1302,51 +1261,7 @@ Rcpp::List cluster_brown(std::string text_file,
                   bool chk = false,
                   bool print_stats = false,
                   bool paths2map = false) {
-  string restrict_file = "";
-  string paths_file = "";
-  string map_file = "";
-  string collocs_file = "";
   string featvec_file = "";
-  string comment = "";
-  
-  // Set output_dir from arguments.
-  if(output_dir.empty()) {
-    output_dir = file_base(strip_dir(text_file));
-    output_dir += str_printf("-c%d", initC);
-    output_dir += str_printf("-p%d", plen);
-    if(!restrict_file.empty()) output_dir += str_printf("-R%s", file_base(strip_dir(restrict_file)).c_str());
-    output_dir += ".out";
-  }
-  
-#ifndef _WIN32
-  if(system(("mkdir -p " + output_dir).c_str()) != 0)
-    assert2(false, "Can't create " << output_dir);
-  if(system(("rm -f " + output_dir + "/*").c_str()) != 0)
-    assert2(false, "Can't remove things in " << output_dir);
-#else
-  if (!::CreateDirectory(output_dir.c_str(), NULL) && ERROR_ALREADY_EXISTS != ::GetLastError())
-    assert2(false, "Can't create " << output_dir);
-  {
-      vector<string> files;
-      bool success = true;
-      if (!(success = get_files_in_dir(output_dir.c_str(), true, files))) {
-        for (auto s : files) {
-          if (!::DeleteFile(s.c_str())) success = false;
-        }
-      }
-      if (!success)
-        assert2(false, "Can't remove things in " << output_dir);
-  }
-#endif
-  
-  // Set arguments from the output_dir.
-  if(!output_dir.empty()) {
-    if(paths_file.empty())               paths_file = output_dir+"/paths";
-    if(map_file.empty())                   map_file = output_dir+"/map";
-    if(collocs_file.empty())           collocs_file = output_dir+"/collocs";
-    if(log_info.log_file.empty()) log_info.log_file = output_dir+"/log";
-  }
-  
   //init_log;
   
   track_mem(db);
@@ -1366,33 +1281,42 @@ Rcpp::List cluster_brown(std::string text_file,
   track_mem(q2);
   track_mem(L2);
   
-  read_restrict_text(restrict_file);
-  read_text(text_file, restrict_file, paths2map, plen, min_occur, featvec_file, initC);
-  Rcpp::DataFrame collocations;
-  Rcpp::DataFrame clusterassignment;
-  if(featvec_file.empty()) {
-    if(paths2map)
-      convert_paths_to_map(paths_file, map_file);
-    else if(!print_stats) {
-      track("create_initial_clusters()", "", true);
-      
-      freq_order_phrases.resize(N);
-      foridx(a, N) freq_order_phrases[a] = a;
-      
-      logs("Sorting " << N << " phrases by frequency");
-      sort(freq_order_phrases.begin(), freq_order_phrases.end(), phrase_freq_greater);
-      
-      if(initC > N){
-        initC = N;
-      }
-      create_initial_clusters(initC);
-      collocations = brown_collocations(ncollocs);
-      //output_best_collocations(collocs_file, ncollocs);
-      do_clustering(chk, num_threads, initC);
-      //output_cluster_paths(paths_file, map_file);
-      clusterassignment = brown_clusterassignment();
+  bool use_restrict = vocabulary.size() > 0;
+  if(use_restrict){
+    for(unsigned int i = 0; i < vocabulary.size(); i++){
+      std::string s = vocabulary[i];
+      db.lookup(s.c_str(), true, -1); // use only this vocabulary
     }
   }
+  for(unsigned int i = 0; i < x.size(); i++){
+    std::string s = x[i];
+    int w = db.lookup(s.c_str(), !use_restrict, -1); // incorporate words either from the vocabulary set or all
+    text.push_back(w);
+  }
+  if(db.size() == 0){
+    Rcpp::stop("No data provided");
+  }
+
+  //read_restrict_text(restrict_file);
+  read_text(paths2map, plen, min_occur, featvec_file, initC);
+  Rcpp::DataFrame collocations;
+  Rcpp::DataFrame clusterassignment;
+  
+  track("create_initial_clusters()", "", true);
+  
+  freq_order_phrases.resize(N);
+  foridx(a, N) freq_order_phrases[a] = a;
+  
+  logs("Sorting " << N << " phrases by frequency");
+  sort(freq_order_phrases.begin(), freq_order_phrases.end(), phrase_freq_greater);
+  
+  if(initC > N){
+    initC = N;
+  }
+  create_initial_clusters(initC);
+  collocations = brown_collocations(ncollocs);
+  do_clustering(chk, num_threads, initC);
+  clusterassignment = brown_clusterassignment();
   
   db.clear();                // word database
   phrase_freqs.clear();     // phrase a < N -> number of times a appears in the text
