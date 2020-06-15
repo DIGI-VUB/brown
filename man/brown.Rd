@@ -26,6 +26,8 @@ brown(
 \item{num_threads}{number of threads to use for parallel computation. Defaults to 1.}
 
 \item{trace}{logical indicating to print the evolution of the algorithm. Defaults to FALSE.}
+
+\item{...}{passed on to \code{readLines} in case \code{x} is a file}
 }
 \value{
 an object of class 'brown' which is a list with elements
