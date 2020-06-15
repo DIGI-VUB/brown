@@ -75,11 +75,12 @@ public:
   }
 };
 
+
 vector< OptInfo<bool> > bool_opts;
 vector< OptInfo<int> > int_opts;
 vector< OptInfo<double> > double_opts;
 vector< OptInfo<string> > string_opts;
-
+/*
 opt_define_string(output_dir,    "output_dir", "",         "Output everything to this directory.");
 opt_define_string(text_file,     "text", "",               "Text file with corpora (input).");
 opt_define_string(restrict_file, "restrict", "",           "Only consider words that appear in this text (input).");
@@ -99,6 +100,7 @@ opt_define_int(num_threads, "threads", 1,                  "Number of threads to
 opt_define_bool(chk,         "chk", false,                 "Check data structures are valid (expensive).");
 opt_define_bool(print_stats, "stats", false,               "Just print out stats.");
 opt_define_bool(paths2map,   "paths2map", false,           "Take the paths file and generate a map file.");
+*/
 
 //#define use_restrict (!restrict_file.empty())
 const char *delim_str = "$#$";
@@ -365,7 +367,7 @@ void read_text(string text_file, string restrict_file, bool paths2map, int plen,
   read_text(text_file.c_str(), read_text_process_word, db, !use_restrict, !use_restrict, !use_restrict);
   T = len(text);
   delim_word = db.lookup(delim_str, false, -1);
-  if(!paths2map) db.destroy_s2i(); // Conserve memory.
+  //if(!paths2map) db.destroy_s2i(); // Conserve memory.
   
   // Count the phrases that we care about so we can map them all to integers.
   track_block("Counting phrases", "", false) {
@@ -450,7 +452,7 @@ void read_text(string text_file, string restrict_file, bool paths2map, int plen,
   }
 #endif
   
-  destroy(text);
+  //destroy(text);
   initC = min(initC, N);
   
   logs("Text length: " << T << ", " << N << " phrases, " << len(db) << " words");
@@ -669,7 +671,7 @@ void compute_L2() {
 // Add new phrase as a cluster.
 // Compute its L2 between a and all existing clusters.
 // O(C^2) time, O(T) time over all calls.
-void incorporate_new_phrase(int a) {
+void incorporate_new_phrase(int a, int num_threads) {
   track("incorporate_new_phrase()", Cluster(a), false);
   
   int s = put_cluster_in_free_slot(a);
@@ -730,7 +732,7 @@ void incorporate_new_phrase(int a) {
 }
 
 
-void update_L2(int thread_id) {
+void update_L2(int thread_id, int num_threads) {
   
   while (true) {
     
@@ -787,7 +789,7 @@ void update_L2(int thread_id) {
 
 // O(C^2) time.
 // Merge clusters a (in slot s) and b (in slot t) into c (in slot u).
-void merge_clusters(int s, int t) {
+void merge_clusters(int s, int t, int num_threads) {
   assert(ORDER_VALID(s, t));
   int a = slot2cluster[s];
   int b = slot2cluster[t];
@@ -851,7 +853,7 @@ void merge_clusters(int s, int t) {
     }
   }
 }
-void merge_clusters(const IntPair &st) { merge_clusters(st.first, st.second); }
+void merge_clusters(const IntPair &st, int num_threads) { merge_clusters(st.first, st.second, num_threads); }
 
 // MAKE SURE THIS IS NOT DEFINED FOR EFFICIENCY!
 //#define PRINT_RANKED
@@ -950,7 +952,7 @@ void compute_cluster_distribs() {
     int ca = phrase2cluster(a);
     IntIntMap a_count2;
     int a_count1 = 0;
-    double kl;
+    //double kl;
     
     // Left distribution
     a_count2.clear(), a_count1 = 0;
@@ -959,7 +961,8 @@ void compute_cluster_distribs() {
       a_count2[cb]++;
       a_count1++;
     }
-    kl = kl_map[0][a] = kl_divergence(a_count2, a_count1, count2, count1, ca, false);
+    //kl = kl_map[0][a] = kl_divergence(a_count2, a_count1, count2, count1, ca, false);
+    kl_map[0][a] = kl_divergence(a_count2, a_count1, count2, count1, ca, false);
     //logs("Left-KL(" << Phrase(a) << " | " << Cluster(ca) << ") = " << kl);
     
     // Right distribution
@@ -969,7 +972,8 @@ void compute_cluster_distribs() {
       a_count2[cb]++;
       a_count1++;
     }
-    kl = kl_map[1][a] = kl_divergence(a_count2, a_count1, count2, count1, ca, true);
+    //kl = kl_map[1][a] = kl_divergence(a_count2, a_count1, count2, count1, ca, true);
+    kl_map[1][a] = kl_divergence(a_count2, a_count1, count2, count1, ca, true);
     //logs("Right-KL(" << Phrase(a) << " | " << Cluster(ca) << ") = " << kl);
   }
 }
@@ -980,7 +984,7 @@ int word2phrase(int a) {
 }
 
 // Read in from paths_file and fill in phrase2rep, rep2cluster
-void convert_paths_to_map() {
+void convert_paths_to_map(string paths_file, string map_file) {
   track("convert_paths_to_map()", "", false);
   assert(!paths_file.empty() && !map_file.empty());
   
@@ -1070,7 +1074,7 @@ void do_clustering(bool chk, int num_threads, int initC) {
   for (int ii=0; ii<num_threads; ii++) {
     thread_start[ii].notify();
     thread_idle[ii].notify();
-    threads[ii] = thread(update_L2, ii);
+    threads[ii] = thread(update_L2, ii, num_threads);
   }
   
   curr_cluster_id = N; // New cluster ids will start at N, after all the phrases.
@@ -1085,9 +1089,9 @@ void do_clustering(bool chk, int num_threads, int initC) {
       int new_a = freq_order_phrases[i];
       track("Merging phrase", i << '/' << N << ": " << Cluster(new_a), true);
       logs("Mutual info: " << curr_minfo);
-      incorporate_new_phrase(new_a);
+      incorporate_new_phrase(new_a, num_threads);
       repcheck(chk);
-      merge_clusters(find_opt_clusters_to_merge());
+      merge_clusters(find_opt_clusters_to_merge(), num_threads);
       repcheck(chk);
     }
   }
@@ -1102,7 +1106,7 @@ void do_clustering(bool chk, int num_threads, int initC) {
     mem_tracker.report_mem_usage();
     track_foridx(i, initC-1, "Clustering", true) {
       logs("Mutual info of " << len(cluster2slot) << " clusters: " << curr_minfo);
-      merge_clusters(find_opt_clusters_to_merge());
+      merge_clusters(find_opt_clusters_to_merge(), num_threads);
       repcheck(chk);
     }
   }
@@ -1368,7 +1372,7 @@ Rcpp::List cluster_brown(std::string text_file,
   Rcpp::DataFrame clusterassignment;
   if(featvec_file.empty()) {
     if(paths2map)
-      convert_paths_to_map();
+      convert_paths_to_map(paths_file, map_file);
     else if(!print_stats) {
       track("create_initial_clusters()", "", true);
       
@@ -1390,12 +1394,42 @@ Rcpp::List cluster_brown(std::string text_file,
     }
   }
   
+  db.clear();                // word database
+  phrase_freqs.clear();     // phrase a < N -> number of times a appears in the text
+  left_phrases.clear();  // phrase a < N -> list of phrases that appear to left of a in the text
+  right_phrases.clear(); // phrase a < N -> list of phrases that appear to right of a in the text
+  cluster_tree.clear(); // cluster c -> the 2 sub-clusters that merged to create c
+  freq_order_phrases.clear(); // List of phrases in decreasing order of frequency.
+  //UnionSet phrase2rep;   // phrase a -> the rep phrase in the same cluster as a
+  rep2cluster.clear(); // rep phrase a -> the cluster that contains a
+  cluster2rep.clear(); // cluster a -> the rep phrase in cluster a
+  phrases.clear(); // length of phrase -> flattened list of words
+  slot2cluster.clear(); // slot index -> cluster (-1 if none exists)
+  cluster2slot.clear(); // cluster -> slot index
+  p1.clear();        // slot s (containing cluster a) -> probability Pr(a)
+  p2.clear();     // slots s, t (containing clusters a, b) -> probability Pr(a, b)
+  q2.clear();     // slots s, t (contianing clusters a, b) -> contribution to mutual information
+  L2.clear();     // slots s, t (containing clusters a, b) -> loss of mutual information if merge a and b
+  kl_map[2].clear();
+  
+  /*
+   // Variables used to control the thread pool
+   vector<semaphore> thread_idle;
+   vector<semaphore> thread_start;
+   thread * threads;
+   */
+  //Compute_L2_Job the_job;
+  all_done = false;
+  vec2phrase.clear();
+  text.clear();
+  
   Rcpp::List out = Rcpp::List::create(
     Rcpp::Named("initC") = initC,
     Rcpp::Named("min_occur") = min_occur,
     Rcpp::Named("clusters") = clusterassignment,
     Rcpp::Named("collocations") = collocations
   );
+  out.attr("class") = "brown";
   return out;
 }
 
