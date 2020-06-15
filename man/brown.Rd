@@ -42,7 +42,7 @@ wordgroups <- brown(x, initC = 50, min_occur = 3)
 ## Inspect the output
 head(wordgroups$clusters)
 fat <- split(wordgroups$clusters$word, wordgroups$clusters$path)
-fat <- lapply(fat, txt_collapse)
+fat <- lapply(fat, paste, collapse = " ")
 fat
 }
 \references{

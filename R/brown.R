@@ -30,7 +30,7 @@
 #' ## Inspect the output
 #' head(wordgroups$clusters)
 #' fat <- split(wordgroups$clusters$word, wordgroups$clusters$path)
-#' fat <- lapply(fat, txt_collapse)
+#' fat <- lapply(fat, paste, collapse = " ")
 #' fat
 brown <- function(x, initC = 100, min_occur = 5, num_threads = 1L){
   initC <- as.integer(initC)
@@ -38,6 +38,7 @@ brown <- function(x, initC = 100, min_occur = 5, num_threads = 1L){
   num_threads <- as.integer(num_threads)
   plen <- 1L
   x <- as.character(x)
+  ## This is really important - don't remove this logic of each time using a different file as otherwise the C++ backend of percy-liang is not suited to handle using the same file appropriately
   newfile <- tempfile(pattern = "brown_", fileext = ".txt")
   on.exit({
     if(file.exists(newfile)) file.remove(newfile)
