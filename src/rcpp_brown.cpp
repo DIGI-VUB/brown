@@ -321,10 +321,8 @@ bool is_good_phrase(const IntVec &phrase) {
 }
 
 
-IntVecIntMap vec2phrase;
-IntVec text;
-
-void read_text(bool paths2map, int plen, int min_occur, string featvec_file, int initC) {
+void read_text(bool paths2map, int plen, int min_occur, string featvec_file, int initC, IntVec text) {
+  IntVecIntMap vec2phrase;
   T = len(text);
   delim_word = db.lookup(delim_str, false, -1);
   //if(!paths2map) db.destroy_s2i(); // Conserve memory.
@@ -938,88 +936,6 @@ void compute_cluster_distribs() {
   }
 }
 
-int word2phrase(int a) {
-  IntVecIntMap::const_iterator it = vec2phrase.find(to_vector(1, a));
-  return it == vec2phrase.end() ? -1 : it->second;
-}
-
-// Read in from paths_file and fill in phrase2rep, rep2cluster
-void convert_paths_to_map(string paths_file, string map_file) {
-  track("convert_paths_to_map()", "", false);
-  assert(!paths_file.empty() && !map_file.empty());
-  
-  // Read clusters
-  ifstream in(paths_file.c_str());
-  char buf[1024];
-  typedef unordered_map<string, StringVec, string_hf, string_eq> SSVMap;
-  SSVMap map;
-  while(in.getline(buf, sizeof(buf))) {
-    char *path = strtok(buf, "\t");
-    char *word = strtok(NULL, "\t");
-    assert(word && path);
-    map[path].push_back(word);
-  }
-  
-  // Create the inital clusters.
-  phrase2rep.Init(N); // Init union-set: each phrase starts out in its own cluster
-  foridx(a, N) {
-    rep2cluster[a] = a;
-    cluster2rep[a] = a;
-  }
-  
-  // Merge clusters
-  curr_cluster_id = N; // New cluster ids will start at N, after all the phrases.
-  forcmap(const string &, path, const StringVec &, words, SSVMap, map) {
-    int a = -1;
-    forvec(i, const string &, word, words) {
-      int b = word2phrase(db.lookup(word.c_str(), false, -1));
-      if(b == -1) continue;
-      if(a != -1) {
-        // Record merge in the cluster tree
-        int c = curr_cluster_id++;
-        cluster_tree[c] = make_pair(a, b);
-        
-        // Update relationship between clusters and rep phrases
-        int A = cluster2rep[a];
-        int B = cluster2rep[b];
-        phrase2rep.Join(A, B);
-        int C = phrase2rep.GetRoot(A); // New rep phrase of cluster c (merged a and b)
-        
-        cluster2rep.erase(a);
-        cluster2rep.erase(b);
-        rep2cluster.erase(A);
-        rep2cluster.erase(B);
-        cluster2rep[c] = C;
-        rep2cluster[C] = c;
-        a = c;
-      }
-      else 
-        a = b;
-    }
-  }
-  
-  compute_cluster_distribs();
-  
-  // Merge clusters
-  ofstream out(map_file.c_str());
-  forcmap(const string &, path, const StringVec &, words, SSVMap, map) {
-    forvec(_, const string &, word, words) {
-      int a = word2phrase(db.lookup(word.c_str(), false, -1));
-      if(a == -1) continue;
-      
-      /*cout << a << ' ' << N << endl;
-       cout << Phrase(a) << endl;
-       cout << kl_map[0][a] << endl;
-       cout << kl_map[1][a] << endl;
-       cout << phrase_freqs[a] << endl;*/
-      
-      out << Phrase(a) << '\t'
-          << path << "-L " << kl_map[0][a] << '\t'
-          << path << "-R " << kl_map[1][a] << '\t'
-          << path << "-freq " << phrase_freqs[a] << endl;
-    }
-  }
-}
 
 void do_clustering(bool chk, int num_threads, int initC) {
   track("do_clustering()", "", true);
@@ -1288,6 +1204,7 @@ Rcpp::List cluster_brown(std::vector<std::string> x,
       db.lookup(s.c_str(), true, -1); // use only this vocabulary
     }
   }
+  IntVec text;
   for(unsigned int i = 0; i < x.size(); i++){
     std::string s = x[i];
     int w = db.lookup(s.c_str(), !use_restrict, -1); // incorporate words either from the vocabulary set or all
@@ -1298,7 +1215,7 @@ Rcpp::List cluster_brown(std::vector<std::string> x,
   }
 
   //read_restrict_text(restrict_file);
-  read_text(paths2map, plen, min_occur, featvec_file, initC);
+  read_text(paths2map, plen, min_occur, featvec_file, initC, text);
   Rcpp::DataFrame collocations;
   Rcpp::DataFrame clusterassignment;
   
@@ -1344,9 +1261,7 @@ Rcpp::List cluster_brown(std::vector<std::string> x,
    */
   //Compute_L2_Job the_job;
   all_done = false;
-  vec2phrase.clear();
-  text.clear();
-  
+
   Rcpp::List out = Rcpp::List::create(
     Rcpp::Named("initC") = initC,
     Rcpp::Named("min_occur") = min_occur,
