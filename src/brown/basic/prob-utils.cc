@@ -1,3 +1,4 @@
+#include "Rcpp.h"
 #include "prob-utils.h"
 
 #ifndef M_PI
@@ -5,6 +6,7 @@
 #endif
 
 double rand_gaussian(double mean, double var) {
+  return R::rnorm(mean, var);
   // Use the Box-Muller Transformation
   // if x_1 and x_2 are independent uniform [0, 1],
   // then sqrt(-2 ln x_1) * cos(2*pi*x_2) is Gaussian with mean 0 and variance 1
@@ -17,6 +19,7 @@ double rand_gaussian(double mean, double var) {
 // Throw n coin tosses.
 // Return number of heads.
 int rand_binomial(int n, double p) {
+  return R::rbinom(n, p);
   int k = 0;
   while(n--) k += rand_double() < p;
   return k;
@@ -67,7 +70,8 @@ void norm_distrib(fmatrix &mat, int c) {
 
 void rand_distrib(fvector &probs, int n) {
   probs.resize(n);
-  foridx(i, n) probs[i] = rand();
+  //foridx(i, n) probs[i] = rand();
+  foridx(i, n) probs[i] = (int)(floor(R::runif(0, RAND_MAX)));
   norm_distrib(probs);
 }
 

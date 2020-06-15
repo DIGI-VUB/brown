@@ -1,3 +1,4 @@
+#include "Rcpp.h"
 #ifndef __STD_H__
 #define __STD_H__
 
@@ -39,9 +40,14 @@ using namespace std;
 ////////////////////////////////////////////////////////////
 // Generate random numbers.
 
+/*
 inline int mrand(int a)        { return rand() % a; }
 inline int mrand(int a, int b) { return rand() % (b-a) + a; }
+ */
+inline int mrand(int a)        { return (int)(floor(R::runif(0, RAND_MAX))) % a; }
+inline int mrand(int a, int b) { return (int)(floor(R::runif(0, RAND_MAX))) % (b-a) + a; }
 inline double rand_double() {
+  return R::runif(0, 1);
   static const int BASE = 100000;
   return (double)(rand()%BASE)/BASE;
 }
