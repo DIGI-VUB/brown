@@ -14,7 +14,7 @@ Authors@R: c(
 Description: Group words into different classes by using the 'Brown' word clustering algorithm. 
     Wraps the C++ library available at <https://github.com/chrisquirk/brown-cluster>.
     The techniques are explained in detail in the paper 'Class-Based n-gram Models of Natural Language' by Brown et al. (1992) <https://www.aclweb.org/anthology/J92-4003.pdf>.
-License: MPL-2
+License: MPL-2.0
 URL: https://github.com/DIGI-VUB/brown
 Encoding: UTF-8
 LazyData: true
