@@ -75,6 +75,11 @@ public:
   }
 };
 
+class BrownClustering{
+  
+public:
+};
+
 const char *delim_str = "$#$";
 
 typedef IntPair _;
@@ -150,23 +155,24 @@ int T; // length of text
 
 // Output a phrase.
 struct Phrase { Phrase(int a) : a(a) { } int a; };
-ostream &operator<<(ostream &out, const Phrase &phrase) {
+// For pretty-printing of clusters.
+struct Cluster { Cluster(int c) : c(c) { } int c; };
+std::string PhraseText(const Phrase &phrase) {
+  std::string out;
   // Decode the phrase ID into the length and the offset in phrases.
   int a = phrase.a;
   int l; for(l = 1; a >= num_phrases(l); a -= num_phrases(l), l++);
   
   foridx(i, l) {
-    if(i > 0) out << ' ';
-    out << db[phrases[l][a*l+i]];
+    if(i > 0) out += ' ';
+    out += db[phrases[l][a*l+i]];
   }
   return out;
 }
-
-// For pretty-printing of clusters.
-struct Cluster { Cluster(int c) : c(c) { } int c; };
-ostream &operator<<(ostream &out, const Cluster &cluster) {
+std::string ClusterText(const Cluster &cluster){
+  std::string out;
   int c = cluster.c;
-  out << c;
+  out += std::to_string(c);
   
   int a;
   bool more;
@@ -176,10 +182,10 @@ ostream &operator<<(ostream &out, const Cluster &cluster) {
     assert(contains(cluster2rep, c));
     a = cluster2rep[c], more = true;
   }
-  
-  out << '(' << Phrase(a);
-  if(more) out << "|...";
-  out << ')';
+  out += '(';
+  out += PhraseText(Phrase(a));
+  if(more) out += "|...";
+  out += ')';
   return out;
 }
 
@@ -321,7 +327,7 @@ bool is_good_phrase(const IntVec &phrase) {
 }
 
 
-void read_text(bool paths2map, int plen, int min_occur, string featvec_file, int initC, IntVec text) {
+void read_text(bool paths2map, int plen, int min_occur, int initC, IntVec text) {
   IntVecIntMap vec2phrase;
   T = len(text);
   delim_word = db.lookup(delim_str, false, -1);
@@ -383,32 +389,6 @@ void read_text(bool paths2map, int plen, int min_occur, string featvec_file, int
       }
     }
   }
-  
-#if 1
-  if(!featvec_file.empty()) {
-    ofstream out(featvec_file.c_str());
-    out << N << ' ' << 2*N << endl;
-    foridx(a, N) {
-      IntIntMap phrase_counts;
-      add_to_set(left_phrases[a], phrase_counts, 0);
-      add_to_set(right_phrases[a], phrase_counts, N);
-      out << Phrase(a) << ' ' << len(phrase_counts);
-      forcmap(int, b, int, count, IntIntMap, phrase_counts)
-        out << '\t' << b << ' ' << count;
-      out << endl;
-    }
-  }
-#endif
-  
-#if 0
-  foridx(a, N) {
-    track("", Cluster(a), true);
-    forvec(_, int, b, left_phrases[a])
-      logs("LEFT " << Cluster(b));
-    forvec(_, int, b, right_phrases[a])
-      logs("RIGHT " << Cluster(b));
-  }
-#endif
   
   //destroy(text);
   initC = min(initC, N);
@@ -483,14 +463,6 @@ void repcheck(bool chk) {
   }
 }
 
-void dump() {
-  track("dump()", "", true);
-  FOR_SLOT(s) logs("p1[" << Slot(s) << "] = " << p1[s]);
-  FOR_SLOT(s) FOR_SLOT(t) logs("p2[" << Slot(s) << ", " << Slot(t) << "] = " << p2[s][t]);
-  FOR_SLOT(s) FOR_SLOT(t) logs("q2[" << Slot(s) << ", " << Slot(t) << "] = " << q2[s][t]);
-  FOR_SLOT(s) FOR_SLOT(t) logs("L2[" << Slot(s) << ", " << Slot(t) << "] = " << L2[s][t]);
-  logs("curr_minfo = " << curr_minfo);
-}
 
 
 // c is new cluster that has been just formed from a and b
@@ -607,7 +579,7 @@ void output_best_collocations(string collocs_file, int ncollocs) {
   assert(out);
   for(int i = 0; i < ncollocs; i++) {
     const IntPair &ab = collocs[i].second;
-    out << collocs[i].first << '\t' << Phrase(ab.first) << '\t' << Phrase(ab.second) << endl;
+    out << collocs[i].first << '\t' << PhraseText(Phrase(ab.first)) << '\t' << PhraseText(Phrase(ab.second)) << endl;
   }
 }
 
@@ -617,11 +589,11 @@ void compute_L2() {
   
   track_block("Computing L2", "", false)
     FOR_SLOT(s) {
-      track_block("L2", "L2[" << Slot(s) << ", *]", false)
+      track_block("L2", "L2[" << ClusterText(Slot(s)) << ", *]", false)
       FOR_SLOT(t) {
         if(!ORDER_VALID(s, t)) continue;
         double l = L2[s][t] = compute_L2(s, t);
-        logs("L2[" << Slot(s) << "," << Slot(t) << "] = " << l << ", resulting minfo = " << curr_minfo-l);
+        logs("L2[" << ClusterText(Slot(s)) << "," << ClusterText(Slot(t)) << "] = " << l << ", resulting minfo = " << curr_minfo-l);
       }
     }
 }
@@ -630,7 +602,7 @@ void compute_L2() {
 // Compute its L2 between a and all existing clusters.
 // O(C^2) time, O(T) time over all calls.
 void incorporate_new_phrase(int a, int num_threads) {
-  track("incorporate_new_phrase()", Cluster(a), false);
+  track("incorporate_new_phrase()", ClusterText(Cluster(a)), false);
   
   int s = put_cluster_in_free_slot(a);
   init_slot(s);
@@ -653,7 +625,7 @@ void incorporate_new_phrase(int a, int num_threads) {
   }
   forcmap(int, b, int, count, IntIntMap, freqs) {
     curr_minfo += set_p2_q2_from_count(cluster2slot[a], cluster2slot[b], count);
-    logs(Cluster(a) << ' ' << Cluster(b) << ' ' << count << ' ' << set_p2_q2_from_count(cluster2slot[a], cluster2slot[b], count));
+    logs(ClusterText(Cluster(a)) << ' ' << ClusterText(Cluster(b)) << ' ' << count << ' ' << set_p2_q2_from_count(cluster2slot[a], cluster2slot[b], count));
   }
   
   freqs.clear(); // left bigrams
@@ -666,7 +638,7 @@ void incorporate_new_phrase(int a, int num_threads) {
   }
   forcmap(int, b, int, count, IntIntMap, freqs) {
     curr_minfo += set_p2_q2_from_count(cluster2slot[b], cluster2slot[a], count);
-    logs(Cluster(b) << ' ' << Cluster(a) << ' ' << count << ' ' << set_p2_q2_from_count(cluster2slot[b], cluster2slot[a], count));
+    logs(ClusterText(Cluster(b)) << ' ' << ClusterText(Cluster(a)) << ' ' << count << ' ' << set_p2_q2_from_count(cluster2slot[b], cluster2slot[a], count));
   }
   
   curr_minfo -= q2[s][s]; // q2[s, s] was double-counted
@@ -685,8 +657,6 @@ void incorporate_new_phrase(int a, int num_threads) {
       thread_idle[ii].wait();  // the thread releases the lock to finish
     }
   }
-  
-  //dump();
 }
 
 
@@ -766,7 +736,7 @@ void merge_clusters(int s, int t, int num_threads) {
   phrase2rep.Join(A, B);
   int C = phrase2rep.GetRoot(A); // New rep phrase of cluster c (merged a and b)
   
-  track("Merging clusters", Cluster(a) << " and " << Cluster(b) << " into " << c << ", lost " << L2[s][t], false);
+  track("Merging clusters", ClusterText(Cluster(a)) << " and " << ClusterText(Cluster(b)) << " into " << c << ", lost " << L2[s][t], false);
   
   cluster2rep.erase(a);
   cluster2rep.erase(b);
@@ -832,7 +802,7 @@ IntPair find_opt_clusters_to_merge() {
       // Consider merging clusters in slots s and t.
       double l = L2[s][t];
 #ifndef PRINT_RANKED
-      logs("If merge clusters " << Slot(s) << " and " << Slot(t) << ", lose " << l << ", resulting minfo = " << curr_minfo-l);
+      logs("If merge clusters " << ClusterText(Slot(s)) << " and " << ClusterText(Slot(t)) << ", lose " << l << ", resulting minfo = " << curr_minfo-l);
 #endif
       if(l < min_l) {
         min_l = l;
@@ -856,7 +826,7 @@ IntPair find_opt_clusters_to_merge() {
     int s = st.first;
     int t = st.second;
     double l = merges[i].first;
-    logs("If merge clusters " << Slot(s) << " and " << Slot(t) << ", lose " << l << ", resulting minfo = " << curr_minfo-l);
+    logs("If merge clusters " << ClusterText(Slot(s)) << " and " << ClusterText(Slot(t)) << ", lose " << l << ", resulting minfo = " << curr_minfo-l);
   }
 #endif
   
@@ -963,10 +933,11 @@ void do_clustering(bool chk, int num_threads, int initC) {
     mem_tracker.report_mem_usage();
     for(int i = initC; i < len(freq_order_phrases); i++) { // Merge phrase new_a
       int new_a = freq_order_phrases[i];
-      track("Merging phrase", i << '/' << N << ": " << Cluster(new_a), true);
+      track("Merging phrase", i << '/' << N << ": " << ClusterText(Cluster(new_a)), true);
       logs("Mutual info: " << curr_minfo);
       incorporate_new_phrase(new_a, num_threads);
       repcheck(chk);
+      IntPair cl = find_opt_clusters_to_merge();
       merge_clusters(find_opt_clusters_to_merge(), num_threads);
       repcheck(chk);
     }
@@ -1045,8 +1016,8 @@ void output_cluster_paths(string paths_file, string map_file) {
     IntIntPairMap::const_iterator it = cluster_tree.find(a);
     if(it == cluster_tree.end()) {
       path[path_i] = '\0';
-      if(out_paths) paths_out << path << '\t' << Phrase(a) << '\t' << phrase_freqs[a] << endl;
-      if(out_map) map_out << Phrase(a) << '\t'
+      if(out_paths) paths_out << path << '\t' << PhraseText(Phrase(a)) << '\t' << phrase_freqs[a] << endl;
+      if(out_map) map_out << PhraseText(Phrase(a)) << '\t'
                           << path << "-L " << kl_map[0][a] << '\t'
                           << path << "-R " << kl_map[1][a] << '\t'
                           << path << "-freq " << phrase_freqs[a] << endl;
@@ -1064,18 +1035,7 @@ void output_cluster_paths(string paths_file, string map_file) {
 }
 
 
-std::string PhraseText(const Phrase &phrase) {
-  std::string out;
-  // Decode the phrase ID into the length and the offset in phrases.
-  int a = phrase.a;
-  int l; for(l = 1; a >= num_phrases(l); a -= num_phrases(l), l++);
-  
-  foridx(i, l) {
-    if(i > 0) out += ' ';
-    out += db[phrases[l][a*l+i]];
-  }
-  return out;
-}
+
 
 
 Rcpp::DataFrame brown_collocations(int ncollocs) {
@@ -1196,7 +1156,7 @@ Rcpp::List cluster_brown(std::vector<std::string> x,
   track_mem(p2);
   track_mem(q2);
   track_mem(L2);
-  
+
   bool use_restrict = vocabulary.size() > 0;
   if(use_restrict){
     for(unsigned int i = 0; i < vocabulary.size(); i++){
@@ -1215,7 +1175,7 @@ Rcpp::List cluster_brown(std::vector<std::string> x,
   }
 
   //read_restrict_text(restrict_file);
-  read_text(paths2map, plen, min_occur, featvec_file, initC, text);
+  read_text(paths2map, plen, min_occur, initC, text);
   Rcpp::DataFrame collocations;
   Rcpp::DataFrame clusterassignment;
   
