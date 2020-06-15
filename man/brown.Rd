@@ -4,16 +4,18 @@
 \alias{brown}
 \title{Brown Clustering of Words}
 \usage{
-brown(x, initC = 100, min_occur = 5, num_threads = 1L)
+brown(x, initC = 100, min_occur = 1, num_threads = 1L, trace = FALSE)
 }
 \arguments{
 \item{x}{either the path to a file or a character vector of words where words are separated by spaces}
 
 \item{initC}{the number of clusters}
 
-\item{min_occur}{how many times a word should appear to be considered. Defaults to 5.}
+\item{min_occur}{how many times a word should appear to be considered. Defaults to 1.}
 
 \item{num_threads}{number of threads to use for parallel computation. Defaults to 1.}
+
+\item{trace}{logical indicating to print the evolution of the algorithm. Defaults to FALSE.}
 }
 \value{
 an object of class 'brown' which is a list with elements
@@ -44,6 +46,13 @@ head(wordgroups$clusters)
 fat <- split(wordgroups$clusters$word, wordgroups$clusters$path)
 fat <- lapply(fat, paste, collapse = " ")
 fat
+
+
+## See the evolution of the algorithm
+txt <- c("the cat chased the mouse", 
+         "the dog chased the cat",
+         "the mouse chased the dog")
+wordgroups <- brown(txt, initC = 50, min_occur = 1, trace = TRUE)
 }
 \references{
 \url{https://github.com/percyliang/brown-cluster}, Brown, et al.: Class-Based n-gram Models of Natural Language
