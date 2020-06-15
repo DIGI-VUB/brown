@@ -6,8 +6,9 @@
 #' Wrapper for the \url{https://github.com/percyliang/brown-cluster} C++ implementation.
 #' @param x either the path to a file or a character vector of words where words are separated by spaces
 #' @param initC the number of clusters
-#' @param min_occur how many times a word should appear to be considered. Defaults to 5.
+#' @param min_occur how many times a word should appear to be considered. Defaults to 1.
 #' @param num_threads number of threads to use for parallel computation. Defaults to 1.
+#' @param trace logical indicating to print the evolution of the algorithm. Defaults to FALSE.
 #' @return an object of class 'brown' which is a list with elements
 #' \itemize{
 #' \item{initC: the \code{initC} argument provided or if the number of phrases found in \code{x} is smaller than the amount provided, the lowest of these 2 values}
@@ -32,7 +33,14 @@
 #' fat <- split(wordgroups$clusters$word, wordgroups$clusters$path)
 #' fat <- lapply(fat, paste, collapse = " ")
 #' fat
-brown <- function(x, initC = 100, min_occur = 5, num_threads = 1L){
+#' 
+#' 
+#' ## See the evolution of the algorithm
+#' txt <- c("the cat chased the mouse", 
+#'          "the dog chased the cat",
+#'          "the mouse chased the dog")
+#' wordgroups <- brown(txt, initC = 50, min_occur = 1, trace = TRUE)
+brown <- function(x, initC = 100, min_occur = 1, num_threads = 1L, trace = FALSE){
   initC <- as.integer(initC)
   min_occur <- as.integer(min_occur)
   num_threads <- as.integer(num_threads)
@@ -48,10 +56,17 @@ brown <- function(x, initC = 100, min_occur = 5, num_threads = 1L){
   }else{
     writeLines(x, con = newfile)
   }
-  out <- cluster_brown(text_file = newfile, 
-                       output_dir = tempdir(), 
-                       min_occur = min_occur, initC = initC, plen = plen,
-                       num_threads = num_threads)
+  if(trace){
+    out <- cluster_brown(text_file = newfile, 
+                         output_dir = tempdir(), 
+                         min_occur = min_occur, initC = initC, plen = plen,
+                         num_threads = num_threads)
+  }else{
+    log <- utils::capture.output(out <- cluster_brown(text_file = newfile, 
+                         output_dir = tempdir(), 
+                         min_occur = min_occur, initC = initC, plen = plen,
+                         num_threads = num_threads))
+  }
   out$clusters <- out$clusters[order(out$clusters$path, -out$clusters$freq, decreasing = FALSE), ]
   out
 }

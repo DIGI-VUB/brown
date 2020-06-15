@@ -18,7 +18,7 @@ License: MPL-2.0
 URL: https://github.com/DIGI-VUB/brown
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp
+Imports: Rcpp, utils
 LinkingTo: Rcpp
 Suggests: udpipe
 RoxygenNote: 7.1.0
