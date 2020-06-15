@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #include "logging.h"
 #include "opt.h"
 #include "mem.h"
@@ -70,7 +72,7 @@ void LogInfo::init() {
   if (log_file.empty()) {
     out.open("/dev/stdout");
   } else {
-    cout << "Logging to " << log_file << endl;
+    //Rcpp::Rcout << "Logging to " << log_file << endl;
     out.open(log_file.c_str());
   }
 }

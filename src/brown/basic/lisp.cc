@@ -1,3 +1,4 @@
+#include <Rcpp.h>
 #include "lisp.h"
 #include "std.h"
 #include "indent.h"
@@ -10,7 +11,7 @@ void LispNode::destroy() {
 }
 
 void LispNode::print(int ind) const {
-  cout << Indent(ind) << (value.empty() ? "(empty)" : value) << endl;
+  Rcpp::Rcout << Indent(ind) << (value.empty() ? "(empty)" : value) << endl;
   forvec(_, LispNode *, subnode, children)
     subnode->print(ind+1);
 }

@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #include "opt.h"
 #include "std.h"
 #include "logging.h"
@@ -59,7 +61,7 @@ string GetOpt::Get(const string &name) const {
   string x = Get(name, "");
   if(x.empty()) {
     fprintf(stderr, "Missing required parameter `%s'.\n", name.c_str());
-    exit(1);
+    Rcpp::stop("general error, exiting");
   }
   return x;
 }
@@ -70,10 +72,10 @@ bool GetOpt::Exists(const string &name) const {
 
 int GetOpt::GetInt(const string &name) const {
   int x;
-  int r = sscanf(Get(name).c_str(), "%d", &x);
-  assert(r == 1);
+  sscanf(Get(name).c_str(), "%d", &x);
   return x;
 }
+
 
 int GetOpt::GetInt(const string &name, int default_value) const {
   return Exists(name) ? GetInt(name) : default_value;
@@ -81,10 +83,10 @@ int GetOpt::GetInt(const string &name, int default_value) const {
 
 double GetOpt::GetDouble(const string &name) const {
   double x;
-  int r = sscanf(Get(name).c_str(), "%lf", &x);
-  assert(r == 1);
+  sscanf(Get(name).c_str(), "%lf", &x);
   return x;
 }
+
 
 double GetOpt::GetDouble(const string &name, double default_value) const {
   return Exists(name) ? GetDouble(name) : default_value;
@@ -138,7 +140,7 @@ void process_opt(int argc, char *argv[]) {
       if(!o.required) printf(" [%s]", (o.var)->c_str());
       printf("\n");
     }
-    exit(1);
+    Rcpp::stop("general error, exiting");
   }
 
   // retrieve data; store the variables
@@ -167,7 +169,7 @@ void process_opt(int argc, char *argv[]) {
 
 void init_opt(int argc, char *argv[]) {
   process_opt(argc, argv);
-  srand(rand_seed);
+  //srand(rand_seed);
 }
 
 void print_opts() {

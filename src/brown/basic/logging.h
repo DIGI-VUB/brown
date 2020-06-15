@@ -1,3 +1,5 @@
+#include <Rcpp.h>
+
 #ifndef __LOGGING_H__
 #define __LOGGING_H__
 
@@ -57,7 +59,8 @@ extern LogInfo log_info;
 
 ////////////////////////////////////////////////////////////
 
-#define lout (log_info.out)
+//#define lout (log_info.out)
+#define lout (Rcpp::Rcout)
 #define here lout << "HERE " << __FILE__ << ':' << __LINE__ << endl
 #define _ind_within        (log_info.ind_level   <= log_info.max_ind_level)
 #define _parent_ind_within (log_info.ind_level-1 <= log_info.max_ind_level)

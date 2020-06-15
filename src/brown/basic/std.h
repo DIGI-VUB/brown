@@ -85,7 +85,7 @@ inline void _assert_fneq(double u, double v, const char *file, int line) {
 #define assert_eq(u, v) do { _assert_eq(u, v, __STRING(u), __STRING(v), __FILE__, __LINE__); } while(0)
 template<class T> inline void _assert_eq(const T &u, const T &v, const char *us, const char *vs, const char *file, int line) {
   if(u != v) {
-    cout << "At " << file << ':' << line << ", " <<
+    Rcpp::Rcout << "At " << file << ':' << line << ", " <<
             us << '(' << u << ')' << " != " <<
             vs << '(' << v << ')' << endl;
     assert(0);
@@ -95,7 +95,7 @@ template<class T> inline void _assert_eq(const T &u, const T &v, const char *us,
 #define assert_eq(u, v) do { _assert_eq(u, v, (#u), (#v), __FILE__, __LINE__); } while(0)
 template<class T> inline void _assert_eq(const T &u, const T &v, const char *us, const char *vs, const char *file, int line) {
   if(u != v) {
-    cout << "At " << file << ':' << line << ", " <<
+    Rcpp::Rcout << "At " << file << ':' << line << ", " <<
             us << '(' << u << ')' << " != " <<
             vs << '(' << v << ')' << endl;
     assert(0);
@@ -106,7 +106,7 @@ template<class T> inline void _assert_eq(const T &u, const T &v, const char *us,
 #define assert2(x, reason) \
   do { \
     if(!(x)) { \
-      cout << "\nFAILURE REASON: " << reason << endl; \
+      Rcpp::Rcout << "\nFAILURE REASON: " << reason << endl; \
       assert(x); \
     } \
   } while(0)
