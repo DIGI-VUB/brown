@@ -8,7 +8,7 @@ This repository contains an R package for performing clustering of words based o
 
 ### Installation
 
-- For installing the development version of this package: `remotes::install_github("DIGIT-VUB/brown")`
+- For installing the development version of this package: `remotes::install_github("DIGI-VUB/brown")`
 
 Look to the documentation of the functions
 
